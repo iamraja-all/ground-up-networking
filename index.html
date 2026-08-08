@@ -197,6 +197,31 @@
   .setup-body b{color:var(--ink)} .setup-body code{background:var(--surface-2);border:1px solid var(--line-soft);padding:.05em .35em;border-radius:5px}
   .setup-body pre.cmd{margin:8px 0 10px}
   .setup-body a{color:var(--accent)}
+  .eyebrow.capstone{color:#fff;background:var(--accent)}
+  .chip.cap{background:var(--accent);color:#fff}
+  .lcard.cap .lnum{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong)}
+  .checklist{max-width:760px}
+  .cl-progresswrap{display:flex;align-items:center;gap:12px;margin:2px 0 18px}
+  .cl-prog{flex:1;height:8px;background:var(--surface-2);border-radius:100px;overflow:hidden;max-width:360px}
+  .cl-bar{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-strong));border-radius:100px;transition:width .3s}
+  .cl-count{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);white-space:nowrap}
+  .cl-done{display:none;background:var(--ok-bg);border:1px solid var(--ok-line);color:var(--ok);border-radius:var(--r);padding:12px 16px;font-weight:600;margin:0 0 18px;line-height:1.5}
+  .cl-done.show{display:block;animation:rise .3s ease}
+  .cl-phase{margin:0 0 18px}
+  .cl-ph{font-size:14.5px;font-weight:700;letter-spacing:-.01em;margin:0 0 10px;color:var(--ink)}
+  .cl-item{display:flex;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;color:inherit;align-items:flex-start;transition:border-color .12s,background .12s}
+  .cl-item:hover{border-color:var(--accent-line)}
+  .cl-item.done{background:var(--ok-bg);border-color:var(--ok-line)}
+  .cl-box{flex:0 0 22px;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;margin-top:1px}
+  .cl-box svg{width:13px;height:13px;color:#fff;opacity:0}
+  .cl-item.done .cl-box{background:var(--ok);border-color:var(--ok)}
+  .cl-item.done .cl-box svg{opacity:1}
+  .cl-txt{flex:1}
+  .cl-label{font-weight:600;font-size:15px}
+  .cl-item.done .cl-label{text-decoration:line-through;text-decoration-color:var(--ink-faint);color:var(--ink-soft)}
+  .cl-detail{display:block;font-size:13.5px;color:var(--ink-soft);margin-top:4px;line-height:1.5}
+  .cl-detail code{background:var(--surface-2);border:1px solid var(--line-soft);padding:.05em .35em;border-radius:5px;font-size:.92em}
+  .cl-lesson{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-strong);background:var(--accent-soft);border:1px solid var(--accent-line);padding:2px 7px;border-radius:100px;margin-top:8px}
   .dg-q{fill:var(--accent-strong);font:750 26px var(--sans)}
   .dg-eye{fill:var(--caution)}
   .door{cursor:pointer}
@@ -1665,6 +1690,34 @@ sudo apt update && sudo apt install -y python3</pre>
       finale:true }
   ];
 
+  const CAP=[
+    { rail:"Checklist", eyebrow:"capstone", title:"Put YOUR site online — the checklist.",
+      lede:"The real thing: get a site you built onto the public Internet, with a name and a padlock. The easiest path — works even behind CGNAT, no server to rent — is a Cloudflare Tunnel. Tick each box as you go; your progress saves on this device.",
+      checklist:{ phases:[
+        { title:"① Build something to serve", items:[
+          {id:"cap-build", label:"Have a site or app to publish", detail:"A folder with an <code>index.html</code>, or any app that listens on a local port. Test it locally first — <code>python -m http.server 8000</code>, then open http://localhost:8000."}
+        ]},
+        { title:"② Prove it's public in two commands — no account, no domain", items:[
+          {id:"cap-quick", label:"Open a Cloudflare quick tunnel", detail:"Install <code>cloudflared</code> (see Lesson 7's setup note), then run <code>cloudflared tunnel --url http://localhost:8000</code>. Open the <code>…trycloudflare.com</code> URL it prints — on your phone, wifi off. You're live.", lesson:"Lessons 5–7"}
+        ]},
+        { title:"③ Give it a real name", items:[
+          {id:"cap-domain", label:"Get a domain", detail:"Register one (Cloudflare Registrar, Namecheap, …). Not needed for the quick tunnel above, but required for a permanent address.", lesson:"Lesson 2"},
+          {id:"cap-cf", label:"Add the domain to a free Cloudflare account", detail:"Create a Cloudflare account and point your domain's nameservers to the two Cloudflare gives you (set them at your registrar).", lesson:"Lesson 2"}
+        ]},
+        { title:"④ Publish it permanently", items:[
+          {id:"cap-login", label:"Authorize cloudflared", detail:"<code>cloudflared tunnel login</code> — opens your browser to pick the domain.", lesson:"Lesson 7"},
+          {id:"cap-create", label:"Create the tunnel and route your name to it", detail:"<code>cloudflared tunnel create mysite</code>, then <code>cloudflared tunnel route dns mysite yoursite.com</code> — this writes the DNS record pointing your name at the tunnel.", lesson:"Lessons 2 & 7"},
+          {id:"cap-config", label:"Map the hostname to your local app, then run it", detail:"In <code>config.yml</code>, add an ingress rule sending <code>yoursite.com</code> to <code>http://localhost:8000</code>. Then <code>cloudflared tunnel run mysite</code>.", lesson:"Lesson 4"},
+          {id:"cap-https", label:"Confirm the padlock", detail:"Open <code>https://yoursite.com</code> — valid certificate, served from Cloudflare's edge. You managed zero certificates.", lesson:"Lesson 3"}
+        ]},
+        { title:"⑤ Lock it down and keep it running", items:[
+          {id:"cap-firewall", label:"Close every inbound port", detail:"The tunnel is outbound-only, so nothing needs to be open. Linux: <code>sudo ufw default deny incoming</code>; Windows: keep the firewall on. Inbound attack surface: zero.", lesson:"Lessons 1 & 5"},
+          {id:"cap-service", label:"Run cloudflared on boot", detail:"<code>cloudflared service install</code> so your site survives a reboot.", lesson:"Lesson 7"},
+          {id:"cap-share", label:"Share your URL 🎉", detail:"Send it to a friend. You just put a site on the Internet — name, encryption, routing, and no open ports."}
+        ]}
+      ], alt:"<p>Prefer your <b>own server</b>? Rent a small Linux VM, point your domain's DNS at its public IP (Lesson 2), open only :80 and :443 with <code>ufw</code> (Lesson 1), and run <b>Caddy</b> with a two-line Caddyfile for automatic HTTPS + reverse proxying (Lessons 3–4):</p><pre class=\"cmd\">yoursite.com {\n    reverse_proxy 127.0.0.1:8000\n}</pre><p>This needs a real public IP, so it won't work from behind home CGNAT (Lesson 5) — which is exactly why the tunnel path above exists.</p>" } }
+  ];
+
   const COURSE=[
     { id:"firewall", title:"Firewalls", sub:"how computers decide who gets in", status:"ready", steps:FW },
     { id:"dns", title:"DNS", sub:"turning names into numbers", status:"ready", steps:DNS },
@@ -1672,26 +1725,28 @@ sudo apt update && sudo apt install -y python3</pre>
     { id:"reverseproxy", title:"Reverse Proxies", sub:"one front door for many apps", status:"ready", steps:RP },
     { id:"cgnat", title:"CGNAT", sub:"when you don't even have a public IP", status:"ready", steps:CG },
     { id:"vpn", title:"VPNs", sub:"a private tunnel across the Internet", status:"ready", steps:VPN },
-    { id:"tunnel", title:"Cloudflare Tunnel", sub:"going public with no open ports", status:"ready", steps:CF }
+    { id:"tunnel", title:"Cloudflare Tunnel", sub:"going public with no open ports", status:"ready", steps:CF },
+    { id:"capstone", title:"Put your site online", sub:"a real end-to-end project checklist", status:"ready", capstone:true, steps:CAP }
   ];
 
   /* ============ engine / state ============ */
   const KEY="groundup.course.v1";
   let screen="hub", active=0, os="nix";
   const prog={};
+  const checklistState={};
   const simMem={};
   function P(){ const id=COURSE[active].id; if(!prog[id]) prog[id]={idx:0,maxReached:0,answered:{},done:false}; return prog[id]; }
   function L(){ return COURSE[active].steps; }
 
   function load(){
     os=/win/i.test((navigator.userAgent||"")+" "+(navigator.platform||""))?"win":"nix";
-    try{ const d=JSON.parse(localStorage.getItem(KEY)); if(d){ screen=d.screen||"hub"; active=d.active||0; Object.assign(prog,d.prog||{}); if(d.os) os=d.os; } }catch(e){}
+    try{ const d=JSON.parse(localStorage.getItem(KEY)); if(d){ screen=d.screen||"hub"; active=d.active||0; Object.assign(prog,d.prog||{}); Object.assign(checklistState,d.checklist||{}); if(d.os) os=d.os; } }catch(e){}
     try{ const th=localStorage.getItem("groundup.theme"); if(th) document.documentElement.setAttribute("data-theme",th); }catch(e){}
     if(!COURSE[active]||COURSE[active].status!=="ready"){ active=0; }
   }
-  function save(){ try{ localStorage.setItem(KEY,JSON.stringify({screen,active,prog,os})); }catch(e){} }
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify({screen,active,prog,os,checklist:checklistState})); }catch(e){} }
 
-  function nextReady(after){ for(let i=after+1;i<COURSE.length;i++) if(COURSE[i].status==="ready") return i; return -1; }
+  function nextReady(after){ for(let i=after+1;i<COURSE.length;i++) if(COURSE[i].status==="ready" && !COURSE[i].capstone) return i; return -1; }
 
   /* ---- navigation ---- */
   function enterLesson(i){ if(COURSE[i].status!=="ready") return; active=i; screen="lesson"; P(); save(); renderAll(); }
@@ -1761,7 +1816,7 @@ sudo apt update && sudo apt install -y python3</pre>
     if(st.idx<L().length-1){ go(st.idx+1); return; }
     st.done=true; save();
     const nx=nextReady(active);
-    if(nx>=0){ toast("Lesson complete!"); enterLesson(nx); } else { const allDone=COURSE.every(l=>l.status!=="ready"||(prog[l.id]&&prog[l.id].done)); toast(allDone?"🎉 You finished the whole course!":"Back to the path."); gotoHub(); }
+    if(nx>=0){ toast("Lesson complete!"); enterLesson(nx); } else { const allDone=COURSE.every(l=>l.status!=="ready"||l.capstone||(prog[l.id]&&prog[l.id].done)); toast(COURSE[active].capstone?"Saved — your checklist is kept.":allDone?"🎉 You finished the whole course!":"Back to the path."); gotoHub(); }
   }
   function updateNav(){
     const next=$("#nextBtn"), back=$("#backBtn"), hint=$("#navHint"); if(!next) return;
@@ -1772,7 +1827,7 @@ sudo apt update && sudo apt install -y python3</pre>
     else if((s.drill||s.trace)&&!st.answered[st.idx]) hint.textContent="Finish this to continue";
     else hint.textContent="";
     let label="Continue";
-    if(last){ const nx=nextReady(active); label = nx>=0 ? ("Start: "+COURSE[nx].title+" ") : (active===COURSE.length-1 ? "Finish the course 🎉" : "Back to the path"); }
+    if(last){ const nx=nextReady(active); label = COURSE[active].capstone ? "Back to the path" : nx>=0 ? ("Start: "+COURSE[nx].title+" ") : "Finish the course 🎉"; }
     next.innerHTML=label+' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
     $("#progBar").style.width=Math.round(st.idx/(L().length-1)*100)+"%";
     $("#progNum").textContent=`${st.idx+1} / ${L().length}`;
@@ -1782,18 +1837,21 @@ sudo apt update && sudo apt install -y python3</pre>
   function renderHub(){
     const stage=$("#stage");
     const cards=COURSE.map((c,i)=>{
-      const p=prog[c.id]; const started=p&&p.idx>0; const done=p&&p.done;
-      const ready=c.status==="ready";
+      const p=prog[c.id]; const isCap=!!c.capstone; const done=p&&p.done;
+      const started=p&&p.idx>0; const ready=c.status==="ready";
       let chip = !ready ? `<span class="chip soon">Coming soon</span>`
+        : isCap ? `<span class="chip cap">Project</span>`
         : done ? `<span class="chip done">Completed</span>`
         : started ? `<span class="chip prog">Continue</span>`
         : `<span class="chip start">Start</span>`;
-      const pct = p ? Math.round(p.idx/(c.steps.length-1)*100) : 0;
-      const barHtml = ready&&started&&!done ? `<div class="lprog"><span style="width:${pct}%"></span></div>` : "";
+      const stepsN=(c.steps&&c.steps.length)||1;
+      const pct = (p&&stepsN>1) ? Math.round(p.idx/(stepsN-1)*100) : 0;
+      const barHtml = ready&&started&&!done&&!isCap ? `<div class="lprog"><span style="width:${pct}%"></span></div>` : "";
       const inner=`<div class="lbody-top"><h3>${esc(c.title)}</h3>${chip}</div><p class="sub">${esc(c.sub)}</p>${barHtml}`;
       const cls=`lbody ${ready?"clickable":"soon"}`;
       const body = ready ? `<button class="${cls}" data-i="${i}">${inner}</button>` : `<div class="${cls}">${inner}</div>`;
-      return `<div class="lcard ${ready?'ready':''} ${done?'done':''}"><div class="spine"><div class="lnum">${done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M20 6L9 17l-5-5"/></svg>':(i+1)}</div><div class="connector"></div></div>${body}</div>`;
+      const badge = done ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M20 6L9 17l-5-5"/></svg>' : isCap ? '🚀' : (i+1);
+      return `<div class="lcard ${ready?'ready':''} ${done?'done':''} ${isCap?'cap':''}"><div class="spine"><div class="lnum">${badge}</div><div class="connector"></div></div>${body}</div>`;
     }).join("");
     stage.innerHTML=`<div class="hub">
       <div class="hub-hero">
@@ -1826,6 +1884,7 @@ sudo apt update && sudo apt install -y python3</pre>
     if(step.sim==="vpn") html+=renderVpnSim();
     if(step.sim==="cf") html+=renderCfSim();
     if(step.commands) html+=renderCommands(step.commands);
+    if(step.checklist) html+=renderChecklist(step.checklist);
     if(step.reflect) html+=step.reflect.map((r,i)=>`<div class="reflect-item"><div class="rq">${r.q}</div><button class="reveal-btn" data-r="${i}">Reveal a good answer</button><div class="reflect-a" id="ra${i}">${r.a}</div></div>`).join("");
     html+=`</div>`;
     stage.innerHTML=html;
@@ -1843,9 +1902,31 @@ sudo apt update && sudo apt install -y python3</pre>
     if(step.reflect) $$(".reveal-btn",stage).forEach(b=>b.addEventListener("click",()=>{ $("#ra"+b.dataset.r).classList.add("show"); b.style.display="none"; }));
     wireFigures(stage);
     wireCommands(stage);
+    wireChecklist(stage);
     updateNav(); renderRail();
   }
-  function eyebrowText(k){ return {situation:"Situation",predict:"Predict",reveal:"Discovered",challenge:"Your turn",practical:"Do it for real"}[k]||k; }
+  function eyebrowText(k){ return {situation:"Situation",predict:"Predict",reveal:"Discovered",challenge:"Your turn",practical:"Do it for real",capstone:"Capstone project"}[k]||k; }
+  function renderChecklist(cl){
+    let n=0; cl.phases.forEach(p=>n+=p.items.length);
+    let done=0; cl.phases.forEach(p=>p.items.forEach(it=>{ if(checklistState[it.id]) done++; }));
+    const phasesHtml=cl.phases.map(p=>`<div class="cl-phase"><h3 class="cl-ph">${esc(p.title)}</h3>`+p.items.map(it=>{
+      const ck=!!checklistState[it.id];
+      return `<button type="button" class="cl-item ${ck?"done":""}" data-id="${esc(it.id)}"><span class="cl-box">${IC_CHECK}</span><span class="cl-txt"><span class="cl-label">${it.label}</span>${it.detail?`<span class="cl-detail">${it.detail}</span>`:""}${it.lesson?`<span class="cl-lesson">${esc(it.lesson)}</span>`:""}</span></button>`;
+    }).join("")+`</div>`).join("");
+    return `<div class="checklist" data-total="${n}">
+      <div class="cl-progresswrap"><div class="cl-prog"><span class="cl-bar" style="width:${n?Math.round(done/n*100):0}%"></span></div><span class="cl-count">${done} / ${n} done</span></div>
+      <div class="cl-done ${done===n?"show":""}">🎉 You did it — your site is on the public Internet. That's the whole course, made real.</div>
+      ${phasesHtml}
+      ${cl.alt?`<details class="setup" style="margin-top:16px"><summary>🖥️ Alternative: your own server (a VPS)</summary><div class="setup-body">${cl.alt}</div></details>`:""}
+    </div>`;
+  }
+  function wireChecklist(root){
+    const cl=$(".checklist",root); if(!cl) return;
+    const n=+cl.getAttribute("data-total");
+    const bar=$(".cl-bar",cl), count=$(".cl-count",cl), done=$(".cl-done",cl);
+    const refresh=()=>{ const d=$$(".cl-item.done",cl).length; if(bar)bar.style.width=(n?Math.round(d/n*100):0)+"%"; if(count)count.textContent=d+" / "+n+" done"; if(done)done.classList.toggle("show",d===n && n>0); };
+    $$(".cl-item",cl).forEach(b=>{ if(b.getAttribute("data-wired"))return; b.setAttribute("data-wired","1"); b.addEventListener("click",()=>{ const id=b.dataset.id; checklistState[id]=!checklistState[id]; b.classList.toggle("done",!!checklistState[id]); save(); refresh(); }); });
+  }
 
   /* ---- predict ---- */
   function renderPredict(p){
