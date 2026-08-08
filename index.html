@@ -187,6 +187,16 @@
   .os-btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:12.5px;font-weight:600;padding:5px 13px;border-radius:8px}
   .os-btn:hover{border-color:var(--accent-line)}
   .os-btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-strong)}
+  .setup{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin:0 0 14px;overflow:hidden}
+  .setup>summary{cursor:pointer;list-style:none;padding:11px 14px;font-size:13px;font-weight:600;color:var(--accent-strong);background:var(--surface-2);display:flex;align-items:center;gap:8px}
+  .setup>summary::-webkit-details-marker{display:none}
+  .setup>summary::after{content:"▸";margin-left:auto;color:var(--ink-faint);transition:transform .15s}
+  .setup[open]>summary::after{transform:rotate(90deg)}
+  .setup-body{padding:12px 16px;font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+  .setup-body p{margin:0 0 9px} .setup-body p:last-child{margin:0}
+  .setup-body b{color:var(--ink)} .setup-body code{background:var(--surface-2);border:1px solid var(--line-soft);padding:.05em .35em;border-radius:5px}
+  .setup-body pre.cmd{margin:8px 0 10px}
+  .setup-body a{color:var(--accent)}
   .dg-q{fill:var(--accent-strong);font:750 26px var(--sans)}
   .dg-eye{fill:var(--caution)}
   .door{cursor:pointer}
@@ -456,6 +466,25 @@
   /* ---- hands-on "real commands" blocks ---- */
   const IC_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   const IC_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  function setupNote(){
+    const body = os==="win"
+      ? `<p><b>Where to type these:</b> open <b>PowerShell</b> — press the Start button, type “PowerShell”, hit Enter. (Windows Terminal from the Microsoft Store is nicer, but not required.)</p>
+         <p><b>Installing tools uses <code>winget</code></b>, built into Windows 10/11:</p>
+         <pre class="cmd">winget --version                        # check it's available
+winget install --id Python.Python.3.12   # Python (then close & reopen PowerShell)
+python --version                         # verify it worked</pre>
+         <p>Two tools here (<code>openssl</code>, <code>dig +trace</code>) are easiest inside <b>WSL</b> (run <code>wsl --install</code>, then reboot) or <b>Git Bash</b> (bundled with <a href="https://git-scm.com/download/win" target="_blank" rel="noopener">Git for Windows</a>). Everything else runs in plain PowerShell.</p>`
+      : `<p><b>Where to type these:</b> open your <b>Terminal</b> (macOS: press ⌘-Space, type “Terminal”; Linux: your terminal app).</p>
+         <p><b>Installing tools:</b></p>
+         <pre class="cmd"># macOS — install Homebrew once, then use it:
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install python
+
+# Debian / Ubuntu Linux:
+sudo apt update && sudo apt install -y python3</pre>
+         <p>Check it with <code>python3 --version</code>. Most tools here (<code>dig</code>, <code>curl</code>, <code>openssl</code>, <code>traceroute</code>) are already installed or one <code>brew install</code> / <code>apt install</code> away.</p>`;
+    return `<details class="setup"><summary>🧰 New to this? One-time setup for ${os==="win"?"Windows":"macOS / Linux"} — what you'll need</summary><div class="setup-body">${body}</div></details>`;
+  }
   function renderCommands(blocks){
     const osToggle=`<div class="os-switch"><span class="os-lbl">Your laptop:</span><button class="os-btn ${os==="win"?"on":""}" data-os="win">Windows</button><button class="os-btn ${os==="nix"?"on":""}" data-os="nix">macOS / Linux</button></div>`;
     const body=blocks.map(b=>{
@@ -468,7 +497,7 @@
         (b.caution?`<div class="cmd-caution">⚠ ${b.caution}</div>`:"")+
         `</div></div>`;
     }).join("");
-    return `<div class="cmds">`+osToggle+body+`</div>`;
+    return `<div class="cmds">`+osToggle+setupNote()+body+`</div>`;
   }
   function copyText(t){
     if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
