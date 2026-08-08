@@ -167,6 +167,21 @@
   .fx-play:disabled{opacity:.55;cursor:default}
   .fx-cap{font-size:13px;color:var(--ink-soft);flex:1;min-width:160px;line-height:1.5}
   .fx-cap .fx-step{display:block;padding:1px 0}
+  .eyebrow.practical{color:var(--ok);background:var(--ok-bg)}
+  .cmd-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin:14px 0;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .cmd-head{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line-soft);background:var(--surface-2)}
+  .cmd-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmd-copy{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .cmd-copy:hover{background:var(--surface-3);color:var(--ink)}
+  .cmd-copy.done{color:var(--ok);border-color:var(--ok-line);background:var(--ok-bg)}
+  .cmd-copy svg{width:13px;height:13px}
+  .cmd-body{padding:12px 14px}
+  pre.cmd{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--ink);white-space:pre;overflow-x:auto}
+  .cmd-out-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin:13px 0 5px}
+  pre.cmd-out{margin:0;font-family:var(--mono);font-size:12px;line-height:1.55;color:var(--ink-soft);white-space:pre;overflow-x:auto;background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px}
+  .cmd-note{margin:11px 0 0;font-size:13px;color:var(--ink-soft);line-height:1.55}
+  .cmd-note b{color:var(--ink)} .cmd-note code{background:var(--surface-2);border:1px solid var(--line-soft);padding:.05em .35em;border-radius:5px}
+  .cmd-caution{border-left:3px solid var(--caution);background:var(--caution-bg);padding:8px 12px;border-radius:0 8px 8px 0;margin:11px 0 0;font-size:12.5px;color:var(--ink);line-height:1.5}
   .dg-q{fill:var(--accent-strong);font:750 26px var(--sans)}
   .dg-eye{fill:var(--caution)}
   .door{cursor:pointer}
@@ -432,6 +447,27 @@
     [{label:"visitor",sub:"shop.dev"},{label:"Cloudflare",sub:"TLS + routing",cls:"accent"},{label:"cloudflared",sub:"your box"},{label:"app :3000",cls:"ok"}],
     [{i:0,cap:"Visitor types shop.dev — DNS points it at Cloudflare (L2)."},{i:1,cap:"Cloudflare terminates HTTPS with a real cert, and routes (L3, L4)."},{i:2,cap:"Down the outbound tunnel that beats CGNAT (L5, L6)."},{i:3,cap:"Delivered to your app — zero inbound ports open (L1) ✓",tone:"ok"}],
     {W:880,bw:196,caption:"The full journey — every hop is a lesson you already climbed. Press Play.",aria:"animated full request journey through Cloudflare Tunnel",hint:"▶ Play the whole journey."}); }
+
+  /* ---- hands-on "real commands" blocks ---- */
+  const IC_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  const IC_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  function renderCommands(blocks){
+    return `<div class="cmds">`+blocks.map(b=>`<div class="cmd-card"><div class="cmd-head"><span class="cmd-label">${esc(b.label||"bash")}</span><button class="cmd-copy" type="button" data-copy="${encodeURIComponent(b.cmd)}">${IC_COPY} Copy</button></div><div class="cmd-body"><pre class="cmd">${esc(b.cmd)}</pre>`+
+      (b.out?`<div class="cmd-out-label">expected output</div><pre class="cmd-out">${esc(b.out)}</pre>`:"")+
+      (b.note?`<p class="cmd-note">${b.note}</p>`:"")+
+      (b.caution?`<div class="cmd-caution">⚠ ${b.caution}</div>`:"")+
+      `</div></div>`).join("")+`</div>`;
+  }
+  function copyText(t){
+    if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+    return new Promise((res,rej)=>{ try{ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); res(); }catch(e){ rej(e); } });
+  }
+  function wireCommands(root){
+    $$(".cmd-copy",root).forEach(b=>{
+      if(b.getAttribute("data-wired")) return; b.setAttribute("data-wired","1");
+      b.addEventListener("click",()=>{ const t=decodeURIComponent(b.getAttribute("data-copy")); copyText(t).then(()=>{ b.classList.add("done"); b.innerHTML=IC_CHECK+" Copied"; setTimeout(()=>{ b.classList.remove("done"); b.innerHTML=IC_COPY+" Copy"; },1500); }).catch(()=>toast("Copy failed — select the text and copy manually")); });
+    });
+  }
 
   /* ---- firewall diagrams ---- */
   function journey(level){
@@ -926,6 +962,14 @@
     { rail:"Simulator", eyebrow:"challenge", title:"Trace the packet yourself.",
       lede:"Set the guards, choose a door, send a packet. Watch where it stops — and <em>why</em>. Try the two goals.",
       sim:"firewall" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Now do it on a real Linux server.",
+      lede:"Same idea as the simulator, with the actual tool — <code>ufw</code> (Uncomplicated Firewall) on Ubuntu/Debian. Copy each command and run it on a server or VM.",
+      commands:[
+        {label:"see what's listening (your open doors)", cmd:"ss -tlnp", out:"State   Recv-Q  Send-Q   Local Address:Port\nLISTEN  0       128      0.0.0.0:22        # SSH (admin)\nLISTEN  0       511      0.0.0.0:3000      # your Node app", note:"Every <b>LISTEN</b> line is a door a program has opened on your machine."},
+        {label:"open only the doors you need, then turn it on", cmd:"sudo ufw allow 22/tcp     # keep SSH FIRST\nsudo ufw allow 80/tcp\nsudo ufw allow 443/tcp\nsudo ufw enable", out:"Firewall is active and enabled on system startup", caution:"Allow port 22 (SSH) <b>before</b> you enable ufw on a remote server, or you can lock yourself out."},
+        {label:"check the rules", cmd:"sudo ufw status verbose", out:"Status: active\nDefault: deny (incoming), allow (outgoing)\nTo          Action   From\n22/tcp      ALLOW    Anywhere\n80/tcp      ALLOW    Anywhere\n443/tcp     ALLOW    Anywhere", note:"“default deny (incoming)” is the exact strategy from the lesson: allow what's used, block everything else."},
+        {label:"prove a blocked port is shut (run from another machine)", cmd:"nc -zv YOUR_SERVER_IP 3000", out:"nc: connect to YOUR_SERVER_IP port 3000 (tcp) failed: Connection refused", note:"Port 3000 isn't on the allow-list, so the firewall drops it — even though the app is running behind it."}
+      ] },
     { rail:"First principles", eyebrow:"situation", title:"Now strip it all away.",
       lede:"The real test: imagine each piece <em>didn't exist</em>, and predict what breaks. Think first — then reveal.",
       reflect:[ {q:"Port Forwarding didn't exist. A stranger types your public IP. What problem does the router have?",a:"The request arrives, but the router has no rule for which inside machine it belongs to — so it drops it. Nothing on your network is reachable from outside."},
@@ -1017,6 +1061,14 @@
     { rail:"Resolver sim", eyebrow:"challenge", title:"Resolve a name yourself.",
       lede:"Pick a name and hit Resolve. Watch the resolver walk the hierarchy — then resolve the same name again and watch the cache do its job.",
       sim:"dns" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Watch DNS resolve, for real, with dig.",
+      lede:"<code>dig</code> is the standard DNS lookup tool (install <code>dnsutils</code> / <code>bind-utils</code>). Try it on any name.",
+      commands:[
+        {label:"look up a name", cmd:"dig +short github.com", out:"140.82.121.4", note:"The short answer: the A record — the IP the name resolves to."},
+        {label:"see the full answer and its TTL", cmd:"dig github.com", out:";; ANSWER SECTION:\ngithub.com.   60   IN   A   140.82.121.4\n\n;; Query time: 24 msec", note:"That <b>60</b> is the TTL — how many seconds this answer may be cached before a fresh lookup. Run it again and watch it count down."},
+        {label:"walk the hierarchy yourself: root → TLD → authoritative", cmd:"dig +trace github.com", out:".            NS   a.root-servers.net.     # the root\ncom.         NS   a.gtld-servers.net.     # the .com TLD\ngithub.com.  NS   dns1.p08.nsone.net.     # github's own name servers\ngithub.com.  A    140.82.121.4            # the answer", note:"This is the exact walk from the playable diagram: the root delegates to <code>.com</code>, which delegates to the domain's own servers."},
+        {label:"who are the authoritative name servers?", cmd:"dig +short NS github.com", out:"dns1.p08.nsone.net.\ndns2.p08.nsone.net.\ndns3.p08.nsone.net."}
+      ] },
     { rail:"The full journey", eyebrow:"reveal", title:"Put both lessons together.",
       lede:"You now understand the first two things that happen the instant anyone opens your site — the address lookup, then the guarded connection.",
       diagram:()=>dnsTwoPhase(),
@@ -1119,6 +1171,13 @@
     { rail:"The wiretap", eyebrow:"challenge", title:"Sit on the wire. Try to steal the password.",
       lede:"You're sending a login to shop.dev through café wifi, and an attacker is waiting. Choose your protocol and the attacker's tactic, then send — and see what they capture. Beat both challenges.",
       sim:"https" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Inspect a real certificate with openssl & curl.",
+      lede:"See the padlock's actual certificate, who signed it, and the TLS handshake — on any https site.",
+      commands:[
+        {label:"who issued the cert, and for what dates?", cmd:"echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/null \\\n  | openssl x509 -noout -issuer -subject -dates", out:"issuer=C=US, O=Sectigo Limited, CN=Sectigo ECC Domain Validation Secure Server CA\nsubject=CN=github.com\nnotBefore=Feb  7 00:00:00 2026 GMT\nnotAfter=Feb  7 23:59:59 2027 GMT", note:"The <b>issuer</b> is the Certificate Authority that vouched for this padlock — the CA from the lesson."},
+        {label:"did the chain verify?", cmd:"echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/null | grep 'Verify return'", out:"Verify return code: 0 (ok)", note:"<b>0 (ok)</b> means a trusted CA signed it and the name matches — this is what makes the browser show the padlock."},
+        {label:"see the handshake, then the encrypted response", cmd:"curl -vI https://github.com", out:"* TLSv1.3 (OUT), TLS handshake, ClientHello\n* TLSv1.3 (IN), TLS handshake, Certificate\n* SSL certificate verify ok.\n< HTTP/2 200", note:"The handshake happens first (ClientHello → Certificate → verify), <em>then</em> the HTTP response — all encrypted after that point."}
+      ] },
     { rail:"First principles", eyebrow:"situation", title:"Strip it away.",
       lede:"Same test as always — imagine each piece gone, and predict what breaks.",
       reflect:[
@@ -1200,6 +1259,14 @@
     { rail:"Proxy simulator", eyebrow:"challenge", title:"Wire up the proxy. Route real requests.",
       lede:"Set the routing rules, pick a request, and send. Read the status code the proxy returns — <code>200</code>, <code>404</code>, or <code>502</code>. Beat both challenges.",
       sim:"rp" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Put a reverse proxy in front of two apps.",
+      lede:"<b>Caddy</b> is the easiest — it terminates HTTPS (auto-fetching real certificates) <em>and</em> routes by hostname: Lessons 3 and 4 in a few lines.",
+      commands:[
+        {label:"Caddyfile — one front door, two apps", cmd:"shop.dev {\n    reverse_proxy 127.0.0.1:3000\n}\n\napi.shop.dev {\n    reverse_proxy 127.0.0.1:4000\n}", note:"Caddy listens on :443, reads the <b>Host</b>, and forwards shop.dev → :3000 and api.shop.dev → :4000 — getting and renewing the TLS certs automatically."},
+        {label:"run it", cmd:"sudo caddy run --config ./Caddyfile", out:"INFO  http.acme_client  obtained certificate  {\"identifier\":\"shop.dev\"}\nINFO  serving initial configuration", note:"It contacts a CA (Let's Encrypt), gets a valid cert, and serves HTTPS — no manual cert files."},
+        {label:"check each host lands on the right app", cmd:"curl -s https://shop.dev/health\ncurl -s https://api.shop.dev/health", out:"ok — app on :3000\nok — app on :4000", note:"Same IP, same :443 — the Host name alone decides which app answers."},
+        {label:"prefer nginx? the equivalent server block", cmd:"server {\n    listen 443 ssl;\n    server_name api.shop.dev;\n    location / {\n        proxy_pass http://127.0.0.1:4000;\n        proxy_set_header Host $host;\n    }\n}", note:"Then <code>sudo nginx -t &amp;&amp; sudo systemctl reload nginx</code>. (With nginx you manage the certs yourself, e.g. via certbot.)"}
+      ] },
     { rail:"First principles", eyebrow:"situation", title:"Strip it away.",
       lede:"Imagine each piece gone, and predict what breaks.",
       reflect:[
@@ -1286,6 +1353,12 @@
     { rail:"CGNAT simulator", eyebrow:"challenge", title:"Try to get through — both directions.",
       lede:"Toggle whether you have your own public IP or are behind CGNAT, set your home port-forward, pick a direction, and send. See where the packet dies — and which direction always survives.",
       sim:"cgnat" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Find out if YOU are behind CGNAT.",
+      lede:"Two numbers tell the story: the public IP the world sees, and the first hop out of your network. A hop in the <code>100.64.0.0/10</code> range means carrier-grade NAT.",
+      commands:[
+        {label:"what the world sees as your IP", cmd:"curl -s https://api.ipify.org; echo", out:"203.0.113.47", note:"The shared public IP your ISP presents for you (and possibly your neighbours)."},
+        {label:"trace the first hops out of your network", cmd:"traceroute -n 8.8.8.8", out:" 1  192.168.1.1     1.1 ms    # your home router (private)\n 2  100.72.0.1      9.4 ms    # ← 100.64.0.0/10  =  CGNAT!\n 3  203.0.113.1    11.8 ms    # ISP edge (public)", note:"A hop in <b>100.64.x – 100.127.x</b> between your router and the public Internet is the fingerprint of CGNAT. If your router's WAN IP is one of these — not your real public IP — inbound port-forwarding can't work, which is exactly why the next lesson (tunnels) exists."}
+      ] },
     { rail:"First principles", eyebrow:"situation", title:"Strip it away.",
       lede:"Imagine each piece gone, and predict what breaks.",
       reflect:[
@@ -1371,6 +1444,14 @@
     { rail:"Tunnel simulator", eyebrow:"challenge", title:"Turn the tunnel on and off.",
       lede:"Toggle the VPN, choose a destination (a private office machine or a public site), and send. Watch what reaches — and what the café sniffer captures. Beat both challenges.",
       sim:"vpn" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Bring up a real tunnel with WireGuard.",
+      lede:"WireGuard is the modern, minimal VPN. You generate a keypair (public/private — Lesson 3's idea) and define a tunnel to a peer.",
+      commands:[
+        {label:"generate your keypair", cmd:"wg genkey | tee privatekey | wg pubkey > publickey\ncat publickey", out:"kL2f...your-public-key...=", note:"Same public/private split as HTTPS: you hand the <b>public</b> key to the peer; the <b>private</b> key never leaves your box."},
+        {label:"/etc/wireguard/wg0.conf", cmd:"[Interface]\nPrivateKey = <your-private-key>\nAddress = 10.8.0.2/24          # your virtual address on the VPN\n\n[Peer]\nPublicKey = <server-public-key>\nEndpoint = vpn.example.com:51820   # you dial OUT to this\nAllowedIPs = 10.8.0.0/24\nPersistentKeepalive = 25", note:"<b>Address</b> is your virtual IP on the private network (the “V” and “P” in VPN). <b>Endpoint</b> is outbound — which is why this works from behind CGNAT."},
+        {label:"bring the tunnel up and check it", cmd:"sudo wg-quick up wg0\nsudo wg show", out:"interface: wg0\n  public key: kL2f...=\npeer: 9xQ...server...=\n  endpoint: 203.0.113.9:51820\n  latest handshake: 12 seconds ago\n  transfer: 3.21 KiB received, 4.08 KiB sent", note:"A recent <b>handshake</b> plus bytes transferred means the encrypted tunnel is live and bidirectional."},
+        {label:"you're now on the private network", cmd:"ping -c1 10.8.0.1", out:"64 bytes from 10.8.0.1: icmp_seq=1 ttl=64 time=18.9 ms", note:"10.8.0.1 isn't routable on the open Internet — but through the tunnel you reach it as if you were sitting on that network."}
+      ] },
     { rail:"First principles", eyebrow:"situation", title:"Strip it away.",
       lede:"Imagine each piece gone, and predict what breaks.",
       reflect:[
@@ -1454,6 +1535,14 @@
     { rail:"Build the stack", eyebrow:"challenge", title:"Assemble the whole stack and serve shop.dev.",
       lede:"Point DNS, run the agent, run the app, set the firewall — then send a visitor. Fix any failure by reading its error. Beat both challenges.",
       sim:"cf" },
+    { rail:"Do it for real", eyebrow:"practical", title:"Expose a local app with Cloudflare Tunnel — zero open ports.",
+      lede:"Install <code>cloudflared</code>, log in, create a tunnel, point DNS at it, and run it. Your app on localhost:3000 goes public at https://shop.dev with no inbound ports open.",
+      commands:[
+        {label:"log in & create the tunnel", cmd:"cloudflared tunnel login\ncloudflared tunnel create shop", out:"Tunnel credentials written to /root/.cloudflared/6ff42ae2-....json\nCreated tunnel shop with id 6ff42ae2-...", note:"Creates the tunnel plus a credentials file. Nothing is listening for inbound yet."},
+        {label:"point your DNS name at the tunnel (Lesson 2)", cmd:"cloudflared tunnel route dns shop shop.dev", out:"Added CNAME shop.dev which will route to this tunnel", note:"shop.dev now resolves to Cloudflare's edge — not to your box."},
+        {label:"~/.cloudflared/config.yml (this is your routing, Lesson 4)", cmd:"tunnel: 6ff42ae2-...\ncredentials-file: /root/.cloudflared/6ff42ae2-....json\ningress:\n  - hostname: shop.dev\n    service: http://localhost:3000\n  - service: http_status:404", note:"Reverse-proxy routing, but at Cloudflare's edge: shop.dev → your local :3000."},
+        {label:"run it — the outbound tunnel opens", cmd:"cloudflared tunnel run shop", out:"INF Connection registered  connIndex=0 location=MAA\nINF Connection registered  connIndex=1 location=SIN", note:"Your box dials OUT to Cloudflare (Lessons 5 & 6). Now <code>curl https://shop.dev</code> from anywhere reaches your local app — with <b>every inbound port closed</b> (Lesson 1)."}
+      ] },
     { rail:"First principles", eyebrow:"situation", title:"Strip it away — one last time.",
       lede:"Imagine each piece gone, and predict what breaks.",
       reflect:[
@@ -1637,6 +1726,7 @@
     if(step.sim==="cgnat") html+=renderCgnatSim();
     if(step.sim==="vpn") html+=renderVpnSim();
     if(step.sim==="cf") html+=renderCfSim();
+    if(step.commands) html+=renderCommands(step.commands);
     if(step.reflect) html+=step.reflect.map((r,i)=>`<div class="reflect-item"><div class="rq">${r.q}</div><button class="reveal-btn" data-r="${i}">Reveal a good answer</button><div class="reflect-a" id="ra${i}">${r.a}</div></div>`).join("");
     html+=`</div>`;
     stage.innerHTML=html;
@@ -1653,9 +1743,10 @@
     if(step.sim==="cf") mountCfSim();
     if(step.reflect) $$(".reveal-btn",stage).forEach(b=>b.addEventListener("click",()=>{ $("#ra"+b.dataset.r).classList.add("show"); b.style.display="none"; }));
     wireFigures(stage);
+    wireCommands(stage);
     updateNav(); renderRail();
   }
-  function eyebrowText(k){ return {situation:"Situation",predict:"Predict",reveal:"Discovered",challenge:"Your turn"}[k]||k; }
+  function eyebrowText(k){ return {situation:"Situation",predict:"Predict",reveal:"Discovered",challenge:"Your turn",practical:"Do it for real"}[k]||k; }
 
   /* ---- predict ---- */
   function renderPredict(p){
